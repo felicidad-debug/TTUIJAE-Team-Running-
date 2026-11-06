@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TTUIJAE Team Challenge - Taejae University Running Crew</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        strava: '#FF5722',
+                        'strava-dark': '#E04800',
+                        whatsapp: '#25D366',
+                        'whatsapp-dark': '#128C7E',
+                        'whatsapp-bg': '#0b141a',
+                        'whatsapp-bubble': '#202c33',
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background-color: #0d0e12;
+            color: #e9edef;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 20px));
+        }
+
+        /* Hide scrollbars for clean app feel */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        * {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .orange-gradient {
+            background: linear-gradient(135deg, #FF5722 0%, #FF7043 100%);
+        }
+
+        .card-bg {
+            background-color: #181b22;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .touch-press {
+            touch-action: manipulation;
+            cursor: pointer;
+            transition: transform 0.1s ease, opacity 0.1s ease;
+        }
+        .touch-press:active {
+            transform: scale(0.96);
+            opacity: 0.85;
+        }
+    </style>
+</head>
+<body class="min-h-screen antialiased flex flex-col justify-between selection:bg-strava selection:text-white">
+
+    <!-- TOAST NOTIFICATION BANNER -->
+    <div id="toast-banner" class="fixed top-4 left-4 right-4 z-50 transform -translate-y-24 opacity-0 transition-all duration-300 pointer-events-none max-w-md mx-auto">
+        <div class="flex items-center gap-3 bg-zinc-900/95 text-white px-4 py-3 rounded-2xl shadow-2xl border border-zinc-700 backdrop-blur-md">
+            <div id="toast-icon" class="text-emerald-400 text-lg"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="flex-1 min-w-0">
+                <h4 id="toast-title" class="font-bold text-xs text-white">Notification</h4>
+                <p id="toast-message" class="text-xs text-zinc-300 truncate">Action completed successfully.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="w-full max-w-md mx-auto px-4 pt-4 space-y-4">
+
+        <!-- HEADER BANNER -->
+        <header class="card-bg rounded-2xl p-4 shadow-xl relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl orange-gradient text-white flex items-center justify-center font-black text-xl shadow-lg shrink-0">
+                        <i class="fa-solid fa-person-running"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-strava bg-strava/10 px-2 py-0.5 rounded-full border border-strava/20">
+                                Taejae University Running Crew
+                            </span>
+                            <span id="sync-status-badge" class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-500/20">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Live App
+                            </span>
+                        </div>
+                        <h1 class="text-base font-black text-white mt-1 flex items-center gap-1 leading-tight">
+                            🏃‍♂️ TTUIJAE Team Challenge
+                        </h1>
+                        <p class="text-[11px] font-medium text-zinc-400">Together, We Run &bull; Oct 15 – Nov 14</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1">
+                    <button type="button" onclick="openSettingsSheet()" class="w-9 h-9 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 flex items-center justify-center touch-press transition" title="Team Settings">
+                        <i class="fa-solid fa-gear text-sm"></i>
+                    </button>
+                    <button type="button" onclick="confirmResetWeekly()" class="w-9 h-9 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-400 flex items-center justify-center touch-press transition" title="Start New Week">
+                        <i class="fa-solid fa-arrow-rotate-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- PROGRESS SUMMARY CARDS -->
+        <section class="grid grid-cols-2 gap-3">
+            <!-- Weekly Team Goal -->
+            <div class="card-bg p-3.5 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <span class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block mb-1">Weekly Target</span>
+                    <h3 id="stat-weekly-text" class="text-base font-black text-white font-mono">0.0 / 0 km</h3>
+                </div>
+                <div class="mt-3 space-y-1">
+                    <div class="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                        <div id="stat-weekly-bar" class="orange-gradient h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-zinc-400 font-mono">
+                        <span id="stat-weekly-percent">0%</span>
+                        <span id="stat-weekly-remain">0km left</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Challenge Goal -->
+            <div class="card-bg p-3.5 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <span class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block mb-1">Total Challenge</span>
+                    <h3 id="stat-total-text" class="text-base font-black text-white font-mono">0.0 / 0 km</h3>
+                </div>
+                <div class="mt-3 space-y-1">
+                    <div class="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                        <div id="stat-total-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-zinc-400 font-mono">
+                        <span id="stat-total-percent">0%</span>
+                        <span id="stat-total-emoji">🤯💪🔥</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LOG DAILY RUN CARD (EXACT MATCH TO USER SCREENSHOT) -->
+        <section class="card-bg rounded-2xl p-4 border border-zinc-800/90 shadow-xl space-y-3.5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-strava text-white flex items-center justify-center text-xs font-black">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <h2 class="text-sm font-extrabold text-white tracking-tight">Log Daily Run</h2>
+                </div>
+                <span class="text-[11px] text-zinc-400">Adds directly to current week</span>
+            </div>
+
+            <form onsubmit="handleMainFormSubmit(event)" class="space-y-3">
+                <!-- Select Runner Dropdown -->
+                <div>
+                    <label for="main-select-runner" class="block text-xs font-semibold text-zinc-400 mb-1.5">Select Runner</label>
+                    <div class="relative">
+                        <select id="main-select-runner" class="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-3 text-xs text-white appearance-none focus:outline-none focus:border-strava font-sans touch-press pr-8" required>
+                            <!-- Populated dynamically -->
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-3.5 top-3.5 text-xs text-zinc-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Distance Input -->
+                <div>
+                    <label for="main-distance" class="block text-xs font-semibold text-zinc-400 mb-1.5">Distance Run (km)</label>
+                    <div class="relative">
+                        <input type="number" id="main-distance" step="0.1" min="0.1" max="200" placeholder="e.g. 5.0" class="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl pl-3.5 pr-10 py-2.5 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-strava" required>
+                        <span class="absolute right-3.5 top-2.5 text-xs font-mono text-zinc-400">km</span>
+                    </div>
+                </div>
+
+                <!-- Quick Presets -->
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-400 mb-1.5">Quick Presets:</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="setMainDistancePreset(1.0)" class="py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-xs font-semibold rounded-xl border border-zinc-700/70 touch-press transition text-center">+1.0km</button>
+                        <button type="button" onclick="setMainDistancePreset(3.0)" class="py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-xs font-semibold rounded-xl border border-zinc-700/70 touch-press transition text-center">+3.0km</button>
+                        <button type="button" onclick="setMainDistancePreset(5.0)" class="py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-xs font-semibold rounded-xl border border-zinc-700/70 touch-press transition text-center">+5.0km</button>
+                        <button type="button" onclick="setMainDistancePreset(10.0)" class="py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-xs font-semibold rounded-xl border border-zinc-700/70 touch-press transition text-center">+10.0km</button>
+                    </div>
+                </div>
+
+                <!-- Date & Note Inputs -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label for="main-date" class="block text-xs font-semibold text-zinc-400 mb-1.5">Date</label>
+                        <input type="date" id="main-date" class="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-strava" required>
+                    </div>
+                    <div>
+                        <label for="main-note" class="block text-xs font-semibold text-zinc-400 mb-1.5">Note (Optional)</label>
+                        <input type="text" id="main-note" placeholder="e.g. Lake Merced track run" class="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-strava">
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full orange-gradient hover:bg-strava-dark text-white font-extrabold py-3.5 rounded-xl shadow-lg touch-press transition text-xs sm:text-sm flex items-center justify-center gap-2 mt-2">
+                    <i class="fa-solid fa-bolt text-sm"></i>
+                    <span>⚡ Add Run & Update Leaderboard</span>
+                </button>
+            </form>
+        </section>
+
+        <!-- TEAM LEADERBOARD -->
+        <section class="space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-trophy text-strava text-xs"></i>
+                    <span>Team Leaderboard & Progress</span>
+                </h2>
+                <button type="button" onclick="openAddMemberSheet()" class="text-xs font-bold text-strava hover:underline flex items-center gap-1 touch-press">
+                    <i class="fa-solid fa-plus text-[10px]"></i> Add Member
+                </button>
+            </div>
+
+            <div id="members-container" class="space-y-2.5">
+                <!-- Dynamically rendered -->
+            </div>
+        </section>
+
+        <!-- WHATSAPP MESSAGE GENERATOR CARD -->
+        <section class="card-bg rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-md bg-whatsapp text-white flex items-center justify-center text-xs">
+                        <i class="fa-brands fa-whatsapp"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-white">WhatsApp Update Snippet</h3>
+                </div>
+                <span class="text-[10px] font-bold text-whatsapp bg-whatsapp/10 px-2 py-0.5 rounded-full border border-whatsapp/20">
+                    Live Formatted
+                </span>
+            </div>
+
+            <!-- Monospace WhatsApp Chat Preview -->
+            <div class="bg-whatsapp-bg p-3 rounded-xl border border-zinc-800 font-mono">
+                <div id="whatsapp-preview" class="bg-whatsapp-bubble p-3 rounded-xl text-zinc-100 text-xs whitespace-pre-wrap leading-relaxed shadow-lg">
+                    <!-- Text snippet generated here -->
+                </div>
+            </div>
+
+            <!-- Share / Copy Buttons -->
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <button type="button" onclick="copyWhatsAppMessage()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold py-3 px-3 rounded-xl border border-zinc-700 touch-press transition flex items-center justify-center gap-1.5 text-xs">
+                    <i class="fa-solid fa-copy text-sm"></i>
+                    <span>📋 Copy Text</span>
+                </button>
+                <button type="button" onclick="shareDirectWhatsApp()" class="w-full bg-whatsapp hover:bg-whatsapp-dark text-white font-bold py-3 px-3 rounded-xl touch-press transition flex items-center justify-center gap-1.5 text-xs shadow-lg">
+                    <i class="fa-brands fa-whatsapp text-base"></i>
+                    <span>📲 Open WhatsApp</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- RECENT ACTIVITY LOG -->
+        <section class="card-bg rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-clock-rotate-left text-strava"></i>
+                    <span>Recent Activity Log</span>
+                </h3>
+                <span id="log-count" class="text-[10px] text-zinc-400 font-mono bg-zinc-800 px-2 py-0.5 rounded-full">0 runs</span>
+            </div>
+            <div id="logs-container" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <!-- Log entries -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- STICKY BOTTOM QUICK ACTION BAR -->
+    <div class="fixed bottom-0 left-0 right-0 z-30 bg-zinc-950/95 backdrop-blur-lg border-t border-zinc-800/80 px-4 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+        <div class="max-w-md mx-auto flex items-center justify-between gap-2">
+            <button type="button" onclick="scrollToLogForm()" class="flex-1 orange-gradient text-white font-extrabold py-3 px-4 rounded-xl shadow-lg touch-press transition flex items-center justify-center gap-2 text-xs sm:text-sm">
+                <i class="fa-solid fa-bolt text-sm"></i>
+                <span>Log Run Now</span>
+            </button>
+            <button type="button" onclick="shareDirectWhatsApp()" class="w-11 h-11 bg-whatsapp text-white rounded-xl touch-press transition flex items-center justify-center text-lg shadow-lg shrink-0" title="Open WhatsApp">
+                <i class="fa-brands fa-whatsapp"></i>
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ==================== MODALS & BOTTOM SHEETS ==================== -->
+
+    <!-- ADD/EDIT MEMBER MODAL SHEET -->
+    <div id="sheet-member" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" onclick="closeMemberSheet()"></div>
+        <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-5 space-y-4 shadow-2xl z-10">
+            <div class="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto -mt-1 opacity-60"></div>
+            <div class="flex items-center justify-between">
+                <h3 id="member-sheet-title" class="text-base font-bold text-white">Member Details</h3>
+                <button type="button" onclick="closeMemberSheet()" class="text-zinc-400 hover:text-white p-1 touch-press">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleSaveMember(event)" class="space-y-3.5">
+                <input type="hidden" id="edit-member-id">
+                <div>
+                    <label for="edit-member-name" class="block text-xs font-semibold text-zinc-400 mb-1">Runner Name</label>
+                    <input type="text" id="edit-member-name" placeholder="e.g. Sungwon" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-strava" required>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="edit-member-target" class="block text-xs font-semibold text-zinc-400 mb-1">Weekly Goal (km)</label>
+                        <input type="number" id="edit-member-target" step="0.5" min="1" placeholder="15" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-strava" required>
+                    </div>
+                    <div>
+                        <label for="edit-member-current" class="block text-xs font-semibold text-zinc-400 mb-1">Current Ran (km)</label>
+                        <input type="number" id="edit-member-current" step="0.1" min="0" placeholder="0" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-strava" required>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeMemberSheet()" class="flex-1 py-3 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-bold touch-press">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 rounded-xl orange-gradient text-white text-xs font-extrabold touch-press">Save Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL SHEET -->
+    <div id="sheet-settings" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" onclick="closeSettingsSheet()"></div>
+        <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-5 space-y-4 shadow-2xl z-10">
+            <div class="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto -mt-1 opacity-60"></div>
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-strava"></i>
+                    <span>Team Challenge Settings</span>
+                </h3>
+                <button type="button" onclick="closeSettingsSheet()" class="text-zinc-400 hover:text-white p-1 touch-press">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleSaveSettings(event)" class="space-y-3.5">
+                <div>
+                    <label for="setting-team-name" class="block text-xs font-semibold text-zinc-400 mb-1">Team Title / Header</label>
+                    <input type="text" id="setting-team-name" placeholder="TJ3 Sewon Jo" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-strava" required>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="setting-past-km" class="block text-xs font-semibold text-zinc-400 mb-1">Past Weeks Carryover (km)</label>
+                        <input type="number" id="setting-past-km" step="0.1" min="0" placeholder="177" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-strava" required>
+                    </div>
+                    <div>
+                        <label for="setting-weeks-count" class="block text-xs font-semibold text-zinc-400 mb-1">Total Weeks</label>
+                        <input type="number" id="setting-weeks-count" step="1" min="1" max="12" placeholder="3" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-strava" required>
+                    </div>
+                </div>
+                <div>
+                    <label for="setting-emojis" class="block text-xs font-semibold text-zinc-400 mb-1">WhatsApp Footer Emojis</label>
+                    <input type="text" id="setting-emojis" placeholder="🤯💪🔥" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-strava">
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="restorePresetData()" class="px-3 py-3 rounded-xl bg-zinc-800 text-amber-400 text-xs font-bold touch-press" title="Reset to Screenshot Defaults">Reset Defaults</button>
+                    <button type="submit" class="flex-1 py-3 rounded-xl orange-gradient text-white text-xs font-extrabold touch-press">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRMATION MODAL -->
+    <div id="modal-confirm" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" onclick="closeConfirmModal()"></div>
+        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-xs rounded-2xl p-5 text-center space-y-4 shadow-2xl relative z-10">
+            <div class="w-11 h-11 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mx-auto">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h4 id="confirm-title" class="text-sm font-bold text-white">Confirmation</h4>
+                <p id="confirm-msg" class="text-xs text-zinc-400 mt-1">Are you sure you want to proceed?</p>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeConfirmModal()" class="flex-1 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-bold touch-press">Cancel</button>
+                <button type="button" id="confirm-btn-yes" onclick="executeConfirmAction()" class="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold touch-press">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ==================== APPLICATION STATE & DB SYNC ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Initial Roster matching screenshot
+        const DEFAULT_MEMBERS = [
+            { id: "m1", name: "Ted", target: 15, current: 19.4 },
+            { id: "m2", name: "Sungwon", target: 30, current: 10.0 },
+            { id: "m3", name: "Jiyi", target: 15, current: 4.0 },
+            { id: "m4", name: "Kaho", target: 7, current: 0.0 },
+            { id: "m5", name: "Jose", target: 20, current: 3.5 }
+        ];
+
+        window.appState = {
+            teamName: "TJ3 Sewon Jo",
+            weeksCount: 3,
+            previousWeeksKm: 177.0,
+            emojis: "🤯💪🔥",
+            members: JSON.parse(JSON.stringify(DEFAULT_MEMBERS)),
+            logs: []
+        };
+
+        let db = null;
+        let auth = null;
+        let appId = typeof __app_id !== 'undefined' ? __app_id : 'ttuijae-run-app';
+        let isOnline = false;
+
+        async function initSync() {
+            try {
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+                if (!firebaseConfig) throw new Error("Firebase config not available.");
+
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (token) {
+                    await signInWithCustomToken(auth, token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                isOnline = true;
+                updateSyncUI(true);
+
+                listenToSettings();
+                listenToMembers();
+                listenToLogs();
+
+            } catch (e) {
+                console.warn("Using LocalStorage mode:", e);
+                isOnline = false;
+                updateSyncUI(false);
+                loadLocalState();
+                renderAll();
+            }
+        }
+
+        function getPublicCol(colName) {
+            return collection(db, 'artifacts', appId, 'public', 'data', colName);
+        }
+        function getSettingsDoc() {
+            return doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'config');
+        }
+
+        function listenToSettings() {
+            onSnapshot(getSettingsDoc(), (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    window.appState.teamName = data.teamName || "TJ3 Sewon Jo";
+                    window.appState.weeksCount = data.weeksCount || 3;
+                    window.appState.previousWeeksKm = data.previousWeeksKm || 177.0;
+                    window.appState.emojis = data.emojis || "🤯💪🔥";
+                } else {
+                    setDoc(getSettingsDoc(), {
+                        teamName: "TJ3 Sewon Jo",
+                        weeksCount: 3,
+                        previousWeeksKm: 177.0,
+                        emojis: "🤯💪🔥"
+                    });
+                }
+                renderAll();
+            }, (err) => console.error("Settings sync error:", err));
+        }
+
+        function listenToMembers() {
+            onSnapshot(getPublicCol('members'), (snapshot) => {
+                if (snapshot.empty) {
+                    DEFAULT_MEMBERS.forEach(m => {
+                        setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'members', m.id), m);
+                    });
+                } else {
+                    const list = [];
+                    snapshot.forEach(docSnap => {
+                        list.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    window.appState.members = list;
+                    renderAll();
+                }
+            }, (err) => console.error("Members sync error:", err));
+        }
+
+        function listenToLogs() {
+            onSnapshot(getPublicCol('logs'), (snapshot) => {
+                const logs = [];
+                snapshot.forEach(docSnap => {
+                    logs.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                window.appState.logs = logs;
+                renderAll();
+            }, (err) => console.error("Logs sync error:", err));
+        }
+
+        // Database Mutators
+        window.dbSaveMember = async function(memberObj) {
+            if (isOnline && db && auth.currentUser) {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'members', memberObj.id), memberObj);
+            } else {
+                const idx = window.appState.members.findIndex(m => m.id === memberObj.id);
+                if (idx >= 0) window.appState.members[idx] = memberObj;
+                else window.appState.members.push(memberObj);
+                saveLocalState();
+                renderAll();
+            }
+        };
+
+        window.dbDeleteMember = async function(id) {
+            if (isOnline && db && auth.currentUser) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'members', id));
+            } else {
+                window.appState.members = window.appState.members.filter(m => m.id !== id);
+                saveLocalState();
+                renderAll();
+            }
+        };
+
+        window.dbSaveSettings = async function(settingsObj) {
+            if (isOnline && db && auth.currentUser) {
+                await setDoc(getSettingsDoc(), settingsObj);
+            } else {
+                Object.assign(window.appState, settingsObj);
+                saveLocalState();
+                renderAll();
+            }
+        };
+
+        window.dbAddLog = async function(logObj) {
+            logObj.timestamp = Date.now();
+            if (isOnline && db && auth.currentUser) {
+                await addDoc(getPublicCol('logs'), logObj);
+            } else {
+                logObj.id = 'log_' + Date.now();
+                window.appState.logs.unshift(logObj);
+                saveLocalState();
+                renderAll();
+            }
+        };
+
+        window.dbDeleteLog = async function(logId) {
+            if (isOnline && db && auth.currentUser) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'logs', logId));
+            } else {
+                window.appState.logs = window.appState.logs.filter(l => l.id !== logId);
+                saveLocalState();
+                renderAll();
+            }
+        };
+
+        window.dbRestorePreset = async function() {
+            if (isOnline && db && auth.currentUser) {
+                await setDoc(getSettingsDoc(), {
+                    teamName: "TJ3 Sewon Jo",
+                    weeksCount: 3,
+                    previousWeeksKm: 177.0,
+                    emojis: "🤯💪🔥"
+                });
+                for (const m of DEFAULT_MEMBERS) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'members', m.id), m);
+                }
+            } else {
+                window.appState.teamName = "TJ3 Sewon Jo";
+                window.appState.weeksCount = 3;
+                window.appState.previousWeeksKm = 177.0;
+                window.appState.emojis = "🤯💪🔥";
+                window.appState.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+                saveLocalState();
+                renderAll();
+            }
+        };
+
+        function saveLocalState() {
+            localStorage.setItem('ttuijae_app_state', JSON.stringify(window.appState));
+        }
+
+        function loadLocalState() {
+            const saved = localStorage.getItem('ttuijae_app_state');
+            if (saved) {
+                try {
+                    window.appState = JSON.parse(saved);
+                } catch(e) {
+                    window.appState.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+                }
+            } else {
+                window.appState.members = JSON.parse(JSON.stringify(DEFAULT_MEMBERS));
+            }
+        }
+
+        function updateSyncUI(online) {
+            const badge = document.getElementById('sync-status-badge');
+            if (badge) {
+                if (online) {
+                    badge.className = "text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-500/20";
+                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync`;
+                } else {
+                    badge.className = "text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-amber-500/20";
+                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Local Mode`;
+                }
+            }
+        }
+
+        window.addEventListener('load', () => {
+            const dateInput = document.getElementById('main-date');
+            if (dateInput) {
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.value = today;
+            }
+            initSync();
+        });
+    </script>
+
+
+    <!-- ==================== FRONTEND UI INTERACTION LOGIC ==================== -->
+    <script>
+        let pendingConfirmFn = null;
+
+        function getWeeklyTargetTotal() {
+            return (window.appState.members || []).reduce((sum, m) => sum + (parseFloat(m.target) || 0), 0);
+        }
+
+        function getWeeklyCurrentTotal() {
+            return (window.appState.members || []).reduce((sum, m) => sum + (parseFloat(m.current) || 0), 0);
+        }
+
+        function getTotalChallengeTarget() {
+            return getWeeklyTargetTotal() * (window.appState.weeksCount || 3);
+        }
+
+        function getTotalChallengeCurrent() {
+            return (parseFloat(window.appState.previousWeeksKm) || 0) + getWeeklyCurrentTotal();
+        }
+
+        function renderAll() {
+            renderStats();
+            renderRunnerDropdown();
+            renderMembers();
+            renderWhatsAppText();
+            renderLogs();
+        }
+
+        function renderStats() {
+            const weeklyCur = getWeeklyCurrentTotal();
+            const weeklyTar = getWeeklyTargetTotal();
+            const weeklyPct = weeklyTar > 0 ? Math.min(Math.round((weeklyCur / weeklyTar) * 100), 999) : 0;
+            const weeklyRem = Math.max(0, weeklyTar - weeklyCur);
+
+            document.getElementById('stat-weekly-text').innerText = `${weeklyCur.toFixed(1)} / ${weeklyTar} km`;
+            document.getElementById('stat-weekly-bar').style.width = `${Math.min(100, weeklyPct)}%`;
+            document.getElementById('stat-weekly-percent').innerText = `${weeklyPct}% achieved`;
+            document.getElementById('stat-weekly-remain').innerText = weeklyRem > 0 ? `${weeklyRem.toFixed(1)}km left` : `Goal Reached! 🎉`;
+
+            const totalCur = getTotalChallengeCurrent();
+            const totalTar = getTotalChallengeTarget();
+            const totalPct = totalTar > 0 ? Math.min(Math.round((totalCur / totalTar) * 100), 999) : 0;
+
+            document.getElementById('stat-total-text').innerText = `${totalCur.toFixed(1)} / ${totalTar} km`;
+            document.getElementById('stat-total-bar').style.width = `${Math.min(100, totalPct)}%`;
+            document.getElementById('stat-total-percent').innerText = `${totalPct}% achieved`;
+            document.getElementById('stat-total-emoji').innerText = window.appState.emojis || "🤯💪🔥";
+        }
+
+        function renderRunnerDropdown() {
+            const select = document.getElementById('main-select-runner');
+            if (!select) return;
+
+            const currentSelected = select.value;
+            const members = window.appState.members || [];
+
+            if (members.length === 0) {
+                select.innerHTML = `<option value="">No runners registered</option>`;
+                return;
+            }
+
+            select.innerHTML = members.map(m => `
+                <option value="${m.id}">
+                    ${m.name} (Current: ${m.current.toFixed(1)} / Goal: ${m.target}km)
+                </option>
+            `).join('');
+
+            if (currentSelected && members.some(m => m.id === currentSelected)) {
+                select.value = currentSelected;
+            }
+        }
+
+        function renderMembers() {
+            const container = document.getElementById('members-container');
+            const members = window.appState.members || [];
+
+            if (members.length === 0) {
+                container.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">No team members available.</p>`;
+                return;
+            }
+
+            container.innerHTML = members.map(m => {
+                const pct = m.target > 0 ? Math.round((m.current / m.target) * 100) : 0;
+                const isCompleted = m.current >= m.target;
+
+                return `
+                    <div class="card-bg rounded-2xl p-3.5 space-y-2.5 touch-press transition" onclick="selectRunnerInForm('${m.id}')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl ${isCompleted ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800 text-white'} flex items-center justify-center font-bold text-sm shrink-0">
+                                    ${m.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="text-sm font-extrabold text-white">${m.name}</h3>
+                                        ${isCompleted ? '<span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.2 rounded-full border border-emerald-500/20">Goal Met 🎉</span>' : ''}
+                                    </div>
+                                    <div class="text-xs text-zinc-400 font-mono mt-0.5">
+                                        <span class="text-white font-bold">${m.current.toFixed(1)}</span> / ${m.target} km (${pct}%)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
+                                <button type="button" onclick="selectRunnerInForm('${m.id}')" class="px-2.5 py-1.5 rounded-xl orange-gradient text-white text-xs font-bold shadow-md touch-press flex items-center gap-1">
+                                    <i class="fa-solid fa-plus text-[10px]"></i> Add Run
+                                </button>
+                                <button type="button" onclick="openEditMemberSheet('${m.id}')" class="p-1.5 text-zinc-400 hover:text-white touch-press" title="Edit Goal">
+                                    <i class="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button type="button" onclick="confirmDeleteMember('${m.id}')" class="p-1.5 text-zinc-500 hover:text-red-400 touch-press" title="Delete Member">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                            <div class="${isCompleted ? 'bg-emerald-400' : 'orange-gradient'} h-full transition-all duration-300" style="width: ${Math.min(100, pct)}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function generateWhatsAppText() {
+            const teamTitle = window.appState.teamName || "TJ3 Sewon Jo";
+            let lines = [];
+            lines.push(teamTitle);
+            lines.push("Update");
+
+            (window.appState.members || []).forEach(m => {
+                lines.push(`${m.name}  ${m.current.toFixed(1)} / ${m.target}`);
+            });
+
+            lines.push("");
+
+            const weeklyCur = getWeeklyCurrentTotal().toFixed(1);
+            const weeklyTar = getWeeklyTargetTotal();
+            lines.push(`Weekly = ${weeklyCur} / ${weeklyTar}`);
+
+            const totalCur = getTotalChallengeCurrent().toFixed(1);
+            const totalTar = getTotalChallengeTarget();
+            const emoji = window.appState.emojis ? ` ${window.appState.emojis}` : " 🤯💪🔥";
+            lines.push(`Total = ${totalCur} / ${totalTar}${emoji}`);
+
+            return lines.join("\n");
+        }
+
+        function renderWhatsAppText() {
+            const el = document.getElementById('whatsapp-preview');
+            if (el) el.innerText = generateWhatsAppText();
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logs-container');
+            const countEl = document.getElementById('log-count');
+            const logs = window.appState.logs || [];
+
+            countEl.innerText = `${logs.length} runs`;
+
+            if (logs.length === 0) {
+                container.innerHTML = `<p class="text-xs text-zinc-500 text-center py-3">No run logs recorded yet.</p>`;
+                return;
+            }
+
+            container.innerHTML = logs.map(l => `
+                <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg bg-strava/10 text-strava flex items-center justify-center text-xs font-bold shrink-0">
+                            <i class="fa-solid fa-person-running"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-white">
+                                <span class="font-bold">${l.runnerName}</span> 
+                                <span class="font-mono font-bold text-emerald-400 ml-1">+${parseFloat(l.distance).toFixed(1)}km</span>
+                            </div>
+                            <div class="text-[10px] text-zinc-500 font-mono">${l.date || ''} ${l.note ? '&bull; ' + l.note : ''}</div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="confirmDeleteLog('${l.id}')" class="text-zinc-500 hover:text-red-400 p-1.5 touch-press" title="Undo Run Log">
+                        <i class="fa-solid fa-rotate-left text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Preset Distances Handler
+        function setMainDistancePreset(km) {
+            const input = document.getElementById('main-distance');
+            const cur = parseFloat(input.value) || 0;
+            input.value = (cur + km).toFixed(1);
+        }
+
+        function selectRunnerInForm(runnerId) {
+            const select = document.getElementById('main-select-runner');
+            if (select) select.value = runnerId;
+            scrollToLogForm();
+        }
+
+        function scrollToLogForm() {
+            const form = document.getElementById('main-distance');
+            if (form) {
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                form.focus();
+            }
+        }
+
+        async function handleMainFormSubmit(e) {
+            e.preventDefault();
+            const runnerId = document.getElementById('main-select-runner').value;
+            const distance = parseFloat(document.getElementById('main-distance').value);
+            const dateVal = document.getElementById('main-date').value;
+            const note = document.getElementById('main-note').value.trim();
+
+            if (!runnerId || isNaN(distance) || distance <= 0) {
+                showToast("Invalid Input", "Please select a runner and enter a valid distance.", "error");
+                return;
+            }
+
+            const runner = window.appState.members.find(m => m.id === runnerId);
+            if (!runner) return;
+
+            runner.current = parseFloat((runner.current + distance).toFixed(1));
+            await window.dbSaveMember(runner);
+
+            await window.dbAddLog({
+                runnerId: runner.id,
+                runnerName: runner.name,
+                distance: distance,
+                date: dateVal,
+                note: note
+            });
+
+            document.getElementById('main-distance').value = '';
+            document.getElementById('main-note').value = '';
+
+            showToast("Run Logged! ⚡", `${runner.name} +${distance.toFixed(1)}km updated successfully.`, "success");
+        }
+
+        // WhatsApp Share & Copy
+        function shareDirectWhatsApp() {
+            const text = encodeURIComponent(generateWhatsAppText());
+            window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+            showToast("Opening WhatsApp", "Redirecting to WhatsApp chat...", "success");
+        }
+
+        function copyWhatsAppMessage() {
+            const text = generateWhatsAppText();
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast("Copied to Clipboard!", "WhatsApp format ready to paste.", "success");
+                }).catch(() => fallbackCopy(text));
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            el.style.position = 'fixed';
+            el.style.left = '-9999px';
+            document.body.appendChild(el);
+            el.select();
+            try {
+                document.execCommand('copy');
+                showToast("Copied to Clipboard!", "WhatsApp text copied.", "success");
+            } catch(e) {
+                showToast("Copy Failed", "Please manually select and copy text.", "error");
+            }
+            document.body.removeChild(el);
+        }
+
+        // Sheet Modals
+        function openAddMemberSheet() {
+            document.getElementById('member-sheet-title').innerText = "Add New Runner";
+            document.getElementById('edit-member-id').value = "";
+            document.getElementById('edit-member-name').value = "";
+            document.getElementById('edit-member-target').value = "15";
+            document.getElementById('edit-member-current').value = "0";
+            document.getElementById('sheet-member').classList.remove('hidden');
+        }
+
+        function openEditMemberSheet(id) {
+            const m = window.appState.members.find(x => x.id === id);
+            if (!m) return;
+            document.getElementById('member-sheet-title').innerText = `Edit ${m.name}'s Goal`;
+            document.getElementById('edit-member-id').value = m.id;
+            document.getElementById('edit-member-name').value = m.name;
+            document.getElementById('edit-member-target').value = m.target;
+            document.getElementById('edit-member-current').value = m.current;
+            document.getElementById('sheet-member').classList.remove('hidden');
+        }
+
+        function closeMemberSheet() {
+            document.getElementById('sheet-member').classList.add('hidden');
+        }
+
+        async function handleSaveMember(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-member-id').value || ('m_' + Date.now());
+            const name = document.getElementById('edit-member-name').value.trim();
+            const target = parseFloat(document.getElementById('edit-member-target').value);
+            const current = parseFloat(document.getElementById('edit-member-current').value) || 0;
+
+            if (!name || isNaN(target) || target <= 0) {
+                showToast("Validation Error", "Please enter valid runner details.", "error");
+                return;
+            }
+
+            await window.dbSaveMember({ id, name, target, current });
+            closeMemberSheet();
+            showToast("Member Saved", `${name}'s information has been updated.`, "success");
+        }
+
+        function confirmDeleteMember(id) {
+            const m = window.appState.members.find(x => x.id === id);
+            if (!m) return;
+            openConfirmModal(`Delete ${m.name}?`, `Are you sure you want to remove ${m.name} from the roster?`, async () => {
+                await window.dbDeleteMember(id);
+                showToast("Member Removed", `${m.name} deleted from leaderboard.`, "success");
+            });
+        }
+
+        // Settings Sheet
+        function openSettingsSheet() {
+            document.getElementById('setting-team-name').value = window.appState.teamName || "TJ3 Sewon Jo";
+            document.getElementById('setting-past-km').value = window.appState.previousWeeksKm || 177.0;
+            document.getElementById('setting-weeks-count').value = window.appState.weeksCount || 3;
+            document.getElementById('setting-emojis').value = window.appState.emojis || "🤯💪🔥";
+            document.getElementById('sheet-settings').classList.remove('hidden');
+        }
+
+        function closeSettingsSheet() {
+            document.getElementById('sheet-settings').classList.add('hidden');
+        }
+
+        async function handleSaveSettings(e) {
+            e.preventDefault();
+            const teamName = document.getElementById('setting-team-name').value.trim() || "TJ3 Sewon Jo";
+            const previousWeeksKm = parseFloat(document.getElementById('setting-past-km').value) || 0;
+            const weeksCount = parseInt(document.getElementById('setting-weeks-count').value) || 3;
+            const emojis = document.getElementById('setting-emojis').value.trim();
+
+            await window.dbSaveSettings({ teamName, previousWeeksKm, weeksCount, emojis });
+            closeSettingsSheet();
+            showToast("Settings Updated", "Team challenge parameters saved.", "success");
+        }
+
+        function restorePresetData() {
+            openConfirmModal("Reset to Defaults", "Reset all runners to original screenshot values (Ted, Sungwon, Jiyi, Kaho, Jose)?", async () => {
+                await window.dbRestorePreset();
+                closeSettingsSheet();
+                showToast("Defaults Restored", "Reset to original screenshot values.", "success");
+            });
+        }
+
+        function confirmResetWeekly() {
+            openConfirmModal("Start New Week", "Carry current weekly total over to past weeks and reset weekly run distances to 0.0 km?", async () => {
+                const currentWeekKm = getWeeklyCurrentTotal();
+                const newPastKm = parseFloat((window.appState.previousWeeksKm + currentWeekKm).toFixed(1));
+                await window.dbSaveSettings({
+                    teamName: window.appState.teamName,
+                    previousWeeksKm: newPastKm,
+                    weeksCount: window.appState.weeksCount,
+                    emojis: window.appState.emojis
+                });
+                for (const m of window.appState.members) {
+                    m.current = 0;
+                    await window.dbSaveMember(m);
+                }
+                showToast("New Week Started!", "Weekly run distances reset to 0km.", "success");
+            });
+        }
+
+        function confirmDeleteLog(logId) {
+            const log = (window.appState.logs || []).find(l => l.id === logId);
+            if (!log) return;
+            openConfirmModal("Undo Run Log", `Undo +${log.distance}km log for ${log.runnerName}?`, async () => {
+                const runner = window.appState.members.find(m => m.id === log.runnerId);
+                if (runner) {
+                    runner.current = Math.max(0, parseFloat((runner.current - log.distance).toFixed(1)));
+                    await window.dbSaveMember(runner);
+                }
+                await window.dbDeleteLog(logId);
+                showToast("Log Removed", "Run distance deducted from runner total.", "success");
+            });
+        }
+
+        // Confirmation Modal Helpers
+        function openConfirmModal(title, msg, onConfirm) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-msg').innerText = msg;
+            pendingConfirmFn = onConfirm;
+            document.getElementById('modal-confirm').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('modal-confirm').classList.add('hidden');
+            pendingConfirmFn = null;
+        }
+
+        function executeConfirmAction() {
+            if (typeof pendingConfirmFn === 'function') {
+                pendingConfirmFn();
+            }
+            closeConfirmModal();
+        }
+
+        // Toast Helper
+        function showToast(title, message, type = "success") {
+            const toast = document.getElementById('toast-banner');
+            const tTitle = document.getElementById('toast-title');
+            const tMsg = document.getElementById('toast-message');
+            const tIcon = document.getElementById('toast-icon');
+
+            tTitle.innerText = title;
+            tMsg.innerText = message;
+
+            if (type === "error") {
+                tIcon.className = "text-red-400 text-base";
+                tIcon.innerHTML = `<i class="fa-solid fa-circle-xmark"></i>`;
+            } else {
+                tIcon.className = "text-emerald-400 text-base";
+                tIcon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+            }
+
+            toast.classList.remove('-translate-y-24', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('-translate-y-24', 'opacity-0');
+            }, 2600);
+        }
+    </script>
+</body>
+</html>
